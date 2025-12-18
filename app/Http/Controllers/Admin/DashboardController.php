@@ -21,15 +21,15 @@ class DashboardController extends Controller
         $newUsersThisMonth = User::whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->count();
-        
+
         $usersLastMonth = User::whereMonth('created_at', now()->subMonth()->month)
             ->whereYear('created_at', now()->subMonth()->year)
             ->count();
-        
-        $userGrowth = $usersLastMonth > 0 
+
+        $userGrowth = $usersLastMonth > 0
             ? round((($newUsersThisMonth - $usersLastMonth) / $usersLastMonth) * 100, 1)
             : ($newUsersThisMonth > 0 ? 100 : 0);
-        
+
         // Total Websites
         $totalWebsites = Website::count();
         $newWebsitesThisMonth = Website::whereMonth('created_at', now()->month)
@@ -38,10 +38,10 @@ class DashboardController extends Controller
         $websitesLastMonth = Website::whereMonth('created_at', now()->subMonth()->month)
             ->whereYear('created_at', now()->subMonth()->year)
             ->count();
-        $websiteGrowth = $websitesLastMonth > 0 
+        $websiteGrowth = $websitesLastMonth > 0
             ? round((($newWebsitesThisMonth - $websitesLastMonth) / $websitesLastMonth) * 100, 1)
             : ($newWebsitesThisMonth > 0 ? 100 : 0);
-        
+
         // Total PageSpeed Tests
         $totalPageSpeedTests = PageSpeedInsight::count();
         $testsThisMonth = PageSpeedInsight::whereMonth('created_at', now()->month)
@@ -50,10 +50,10 @@ class DashboardController extends Controller
         $testsLastMonth = PageSpeedInsight::whereMonth('created_at', now()->subMonth()->month)
             ->whereYear('created_at', now()->subMonth()->year)
             ->count();
-        $testsGrowth = $testsLastMonth > 0 
+        $testsGrowth = $testsLastMonth > 0
             ? round((($testsThisMonth - $testsLastMonth) / $testsLastMonth) * 100, 1)
             : ($testsThisMonth > 0 ? 100 : 0);
-        
+
         // Total SEO Audits
         $totalSeoAudits = SeoAudit::count();
         $seoAuditsThisMonth = SeoAudit::whereMonth('created_at', now()->month)
@@ -62,10 +62,10 @@ class DashboardController extends Controller
         $seoAuditsLastMonth = SeoAudit::whereMonth('created_at', now()->subMonth()->month)
             ->whereYear('created_at', now()->subMonth()->year)
             ->count();
-        $seoGrowth = $seoAuditsLastMonth > 0 
+        $seoGrowth = $seoAuditsLastMonth > 0
             ? round((($seoAuditsThisMonth - $seoAuditsLastMonth) / $seoAuditsLastMonth) * 100, 1)
             : ($seoAuditsThisMonth > 0 ? 100 : 0);
-        
+
         // Total Broken Links Checks
         $totalBrokenLinksChecks = BrokenLink::where('status', 'completed')->count();
         $brokenLinksThisMonth = BrokenLink::where('status', 'completed')
@@ -76,16 +76,16 @@ class DashboardController extends Controller
             ->whereMonth('created_at', now()->subMonth()->month)
             ->whereYear('created_at', now()->subMonth()->year)
             ->count();
-        $brokenLinksGrowth = $brokenLinksLastMonth > 0 
+        $brokenLinksGrowth = $brokenLinksLastMonth > 0
             ? round((($brokenLinksThisMonth - $brokenLinksLastMonth) / $brokenLinksLastMonth) * 100, 1)
             : ($brokenLinksThisMonth > 0 ? 100 : 0);
-        
+
         // Average Performance Score
         $avgPerformance = PageSpeedInsight::whereNotNull('performance_score')->avg('performance_score');
-        
+
         // Activity data for last 7 days (combining all activities)
         $daysAgo = collect(range(6, 0))->map(fn($i) => now()->subDays($i)->format('Y-m-d'));
-        
+
         // PageSpeed tests per day
         $pageSpeedTestsLast7Days = PageSpeedInsight::select(
             DB::raw('DATE(created_at) as date'),
@@ -98,7 +98,7 @@ class DashboardController extends Controller
             ->mapWithKeys(function ($item) {
                 return [$item->date => $item->count];
             });
-        
+
         // SEO Audits per day
         $seoAuditsLast7Days = SeoAudit::select(
             DB::raw('DATE(created_at) as date'),
@@ -111,7 +111,7 @@ class DashboardController extends Controller
             ->mapWithKeys(function ($item) {
                 return [$item->date => $item->count];
             });
-        
+
         // Combined activity chart data
         $activityLast7Days = $daysAgo->map(function($date) use ($pageSpeedTestsLast7Days, $seoAuditsLast7Days) {
             return [
@@ -121,10 +121,10 @@ class DashboardController extends Controller
                 'total' => ($pageSpeedTestsLast7Days->get($date, 0) + $seoAuditsLast7Days->get($date, 0))
             ];
         });
-        
+
         // Recent activity - combine all recent activities
         $recentActivities = collect();
-        
+
         // Recent PageSpeed tests
         PageSpeedInsight::with('website')->latest()->take(3)->get()->each(function($test) use ($recentActivities) {
             $recentActivities->push([
@@ -138,7 +138,7 @@ class DashboardController extends Controller
                 'url' => route('admin.websites.pagespeed', $test->website_id)
             ]);
         });
-        
+
         // Recent SEO audits
         SeoAudit::with('website')->latest()->take(3)->get()->each(function($audit) use ($recentActivities) {
             $recentActivities->push([
@@ -152,7 +152,7 @@ class DashboardController extends Controller
                 'url' => route('admin.websites.seo-audit', $audit->website_id)
             ]);
         });
-        
+
         // Recent broken links checks
         BrokenLink::with('website')->where('status', 'completed')->latest()->take(3)->get()->each(function($check) use ($recentActivities) {
             $recentActivities->push([
@@ -166,10 +166,10 @@ class DashboardController extends Controller
                 'url' => route('admin.websites.broken-links', $check->website_id)
             ]);
         });
-        
+
         // Sort by time and take top 10
         $recentActivities = $recentActivities->sortByDesc('time')->take(10)->values();
-        
+
         return view('admin.dashboard', compact(
             'totalUsers',
             'newUsersThisMonth',
@@ -191,20 +191,20 @@ class DashboardController extends Controller
             'recentActivities'
         ));
     }
-    
+
     public function users()
     {
         $users = User::latest()->paginate(10);
         return view('admin.users', compact('users'));
     }
-    
+
     public function analytics()
     {
         $totalUsers = User::count();
         $usersThisMonth = User::whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->count();
-        
+
         $usersByMonth = User::select(
             DB::raw('YEAR(created_at) as year'),
             DB::raw('MONTH(created_at) as month'),
@@ -214,16 +214,16 @@ class DashboardController extends Controller
             ->orderBy('year')
             ->orderBy('month')
             ->get();
-        
+
         // PageSpeed Insights Analytics
         $totalTests = PageSpeedInsight::count();
         $testsThisMonth = PageSpeedInsight::whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->count();
-        
+
         $totalWebsites = Website::count();
         $websitesWithTests = Website::has('pageSpeedInsights')->count();
-        
+
         // Average scores
         $avgPerformance = PageSpeedInsight::whereNotNull('performance_score')
             ->avg('performance_score');
@@ -233,12 +233,12 @@ class DashboardController extends Controller
             ->avg('best_practices_score');
         $avgSeo = PageSpeedInsight::whereNotNull('seo_score')
             ->avg('seo_score');
-        
+
         // Average Core Web Vitals
         $avgLcp = PageSpeedInsight::whereNotNull('lcp')->avg('lcp');
         $avgFcp = PageSpeedInsight::whereNotNull('fcp')->avg('fcp');
         $avgCls = PageSpeedInsight::whereNotNull('cls')->avg('cls');
-        
+
         // Performance trends by month
         $performanceByMonth = PageSpeedInsight::select(
             DB::raw('YEAR(created_at) as year'),
@@ -250,35 +250,42 @@ class DashboardController extends Controller
             ->orderBy('year')
             ->orderBy('month')
             ->get();
-        
+
         // Recent tests
         $recentTests = PageSpeedInsight::with('website')
             ->latest()
             ->take(10)
             ->get();
-        
+
         // Top performing websites (by performance score)
         $topWebsites = Website::select('websites.*')
-            ->join('pagespeed_insights', 'websites.id', '=', 'pagespeed_insights.website_id')
-            ->selectRaw('AVG(pagespeed_insights.performance_score) as avg_performance')
-            ->whereNotNull('pagespeed_insights.performance_score')
-            ->groupBy('websites.id')
-            ->orderByDesc('avg_performance')
+            ->joinSub(
+                PageSpeedInsight::select('website_id')
+                    ->selectRaw('AVG(performance_score) as avg_performance')
+                    ->whereNotNull('performance_score')
+                    ->groupBy('website_id'),
+                'avg_scores',
+                'websites.id',
+                '=',
+                'avg_scores.website_id'
+            )
+            ->addSelect('avg_scores.avg_performance')
+            ->orderByDesc('avg_scores.avg_performance')
             ->take(5)
             ->get();
-        
+
         // SEO Audit Analytics
         $totalSeoAudits = SeoAudit::count();
         $seoAuditsThisMonth = SeoAudit::whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->count();
-        
+
         $websitesWithSeoAudits = Website::has('seoAudits')->count();
-        
+
         // Average SEO score
         $avgSeoAuditScore = SeoAudit::whereNotNull('overall_score')
             ->avg('overall_score');
-        
+
         // SEO trends by month
         $seoAuditsByMonth = SeoAudit::select(
             DB::raw('YEAR(created_at) as year'),
@@ -290,49 +297,56 @@ class DashboardController extends Controller
             ->orderBy('year')
             ->orderBy('month')
             ->get();
-        
+
         // Recent SEO audits
         $recentSeoAudits = SeoAudit::with('website')
             ->latest()
             ->take(10)
             ->get();
-        
+
         // Top SEO websites
         $topSeoWebsites = Website::select('websites.*')
-            ->join('seo_audits', 'websites.id', '=', 'seo_audits.website_id')
-            ->selectRaw('AVG(seo_audits.overall_score) as avg_seo_score')
-            ->whereNotNull('seo_audits.overall_score')
-            ->groupBy('websites.id')
-            ->orderByDesc('avg_seo_score')
+            ->joinSub(
+                SeoAudit::select('website_id')
+                    ->selectRaw('AVG(overall_score) as avg_seo_score')
+                    ->whereNotNull('overall_score')
+                    ->groupBy('website_id'),
+                'avg_seo_scores',
+                'websites.id',
+                '=',
+                'avg_seo_scores.website_id'
+            )
+            ->addSelect('avg_seo_scores.avg_seo_score')
+            ->orderByDesc('avg_seo_scores.avg_seo_score')
             ->take(5)
             ->get();
-        
+
         // Broken Links Analytics
         $totalBrokenLinksChecks = BrokenLink::count();
         $brokenLinksChecksThisMonth = BrokenLink::whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->count();
-        
+
         $websitesWithBrokenLinksChecks = Website::has('brokenLinksChecks')->count();
-        
+
         // Total broken links found
         $totalBrokenLinksFound = BrokenLink::where('status', 'completed')
             ->sum('total_broken');
-        
+
         // Total pages checked
         $totalPagesChecked = BrokenLink::where('status', 'completed')
             ->sum('total_checked');
-        
+
         // Average broken links per check (calculated in PHP for better compatibility)
         $completedChecks = BrokenLink::where('status', 'completed')
             ->where('total_checked', '>', 0)
             ->get();
-        $avgBrokenLinksPerCheck = $completedChecks->count() > 0 
+        $avgBrokenLinksPerCheck = $completedChecks->count() > 0
             ? $completedChecks->avg(function($check) {
                 return $check->total_checked > 0 ? ($check->total_broken / $check->total_checked) : 0;
             })
             : 0;
-        
+
         // Broken links trends by month
         $brokenLinksByMonth = BrokenLink::select(
             DB::raw('YEAR(created_at) as year'),
@@ -345,28 +359,35 @@ class DashboardController extends Controller
             ->orderBy('year')
             ->orderBy('month')
             ->get();
-        
+
         // Recent broken links checks
         $recentBrokenLinksChecks = BrokenLink::with('website')
             ->where('status', 'completed')
             ->latest()
             ->take(10)
             ->get();
-        
+
         // Websites with most broken links
         $websitesWithMostBrokenLinks = Website::select('websites.*')
-            ->join('broken_links_checks', 'websites.id', '=', 'broken_links_checks.website_id')
-            ->selectRaw('SUM(broken_links_checks.total_broken) as total_broken_links')
-            ->where('broken_links_checks.status', 'completed')
-            ->whereNotNull('broken_links_checks.total_broken')
-            ->groupBy('websites.id')
-            ->orderByDesc('total_broken_links')
+            ->joinSub(
+                BrokenLink::select('website_id')
+                    ->selectRaw('SUM(total_broken) as total_broken_links')
+                    ->where('status', 'completed')
+                    ->whereNotNull('total_broken')
+                    ->groupBy('website_id'),
+                'broken_links_totals',
+                'websites.id',
+                '=',
+                'broken_links_totals.website_id'
+            )
+            ->addSelect('broken_links_totals.total_broken_links')
+            ->orderByDesc('broken_links_totals.total_broken_links')
             ->take(5)
             ->get();
-        
+
         return view('admin.analytics', compact(
-            'totalUsers', 
-            'usersThisMonth', 
+            'totalUsers',
+            'usersThisMonth',
             'usersByMonth',
             'totalTests',
             'testsThisMonth',
@@ -402,17 +423,17 @@ class DashboardController extends Controller
             'websitesWithMostBrokenLinks'
         ));
     }
-    
+
     public function settings()
     {
         return view('admin.settings');
     }
-    
+
     public function editUser(User $user)
     {
         return view('admin.users.edit', compact('user'));
     }
-    
+
     public function updateUser(Request $request, User $user)
     {
         $validated = $request->validate([
@@ -420,28 +441,28 @@ class DashboardController extends Controller
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
             'password' => 'nullable|min:6|confirmed',
         ]);
-        
+
         $user->name = $validated['name'];
         $user->email = $validated['email'];
-        
+
         if (!empty($validated['password'])) {
             $user->password = bcrypt($validated['password']);
         }
-        
+
         $user->save();
-        
+
         return redirect()->route('admin.users')->with('success', 'User updated successfully!');
     }
-    
+
     public function deleteUser(User $user)
     {
         // Prevent deleting yourself
         if ($user->id === auth()->id()) {
             return redirect()->route('admin.users')->with('error', 'You cannot delete your own account.');
         }
-        
+
         $user->delete();
-        
+
         return redirect()->route('admin.users')->with('success', 'User deleted successfully!');
     }
 }
