@@ -189,6 +189,7 @@ class WebsiteController extends Controller
             ini_set('max_execution_time', 180);
 
             $strategy = $request->input('strategy', 'mobile');
+            $sendEmail = $request->has('send_email') && $request->input('send_email') == '1';
 
             $service = new PageSpeedInsightsService();
             $result = $service->runTest($website->url, $strategy);
@@ -197,7 +198,7 @@ class WebsiteController extends Controller
                 return back()->with('error', 'Failed to run PageSpeed Insights test. The API may be temporarily unavailable or the URL may be unreachable. Please try again.');
             }
 
-            PageSpeedInsight::create([
+            $insight = PageSpeedInsight::create([
                 'website_id' => $website->id,
                 'strategy' => $strategy,
                 'performance_score' => $result['performance_score'],
@@ -222,6 +223,22 @@ class WebsiteController extends Controller
                     'website_id' => $website->id,
                     'error' => $e->getMessage()
                 ]);
+            }
+
+            // Send email report if requested
+            if ($sendEmail) {
+                try {
+                    $user = auth()->user();
+                    if ($user && $user->email) {
+                        \Illuminate\Support\Facades\Mail::to($user->email)
+                            ->send(new \App\Mail\PageSpeedReportMail($insight->fresh(), $website->fresh()));
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to send PageSpeed report email', [
+                        'website_id' => $website->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
             }
 
             return redirect()->route('admin.websites.pagespeed', $website)
@@ -269,6 +286,7 @@ class WebsiteController extends Controller
             ini_set('max_execution_time', 180);
 
             $url = $request->input('url', $website->url);
+            $sendEmail = $request->has('send_email') && $request->input('send_email') == '1';
 
             $service = new SeoAuditService();
             $result = $service->runAudit($url);
@@ -291,7 +309,7 @@ class WebsiteController extends Controller
 
             $overallScore = $audit->calculateOverallScore();
 
-            SeoAudit::create([
+            $auditRecord = SeoAudit::create([
                 'website_id' => $website->id,
                 'url' => $url,
                 'meta_tags' => $result['meta_tags'] ?? [],
@@ -315,6 +333,22 @@ class WebsiteController extends Controller
                     'website_id' => $website->id,
                     'error' => $e->getMessage()
                 ]);
+            }
+
+            // Send email report if requested
+            if ($sendEmail) {
+                try {
+                    $user = auth()->user();
+                    if ($user && $user->email) {
+                        \Illuminate\Support\Facades\Mail::to($user->email)
+                            ->send(new \App\Mail\SeoAuditReportMail($auditRecord->fresh(), $website->fresh()));
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to send SEO audit report email', [
+                        'website_id' => $website->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
             }
 
             return redirect()->route('admin.websites.seo-audit', $website)
@@ -667,7 +701,7 @@ class WebsiteController extends Controller
             // Send email report if requested
             if ($sendEmail) {
                 try {
-                    $user = \App\Models\User::first();
+                    $user = auth()->user();
                     if ($user && $user->email) {
                         \Illuminate\Support\Facades\Mail::to($user->email)
                             ->send(new \App\Mail\BrokenLinksReportMail($checkRecord->fresh(), $website->fresh()));
@@ -821,6 +855,7 @@ class WebsiteController extends Controller
             ini_set('max_execution_time', 180);
 
             $url = $request->input('url', $website->url);
+            $sendEmail = $request->has('send_email') && $request->input('send_email') == '1';
 
             $service = new DomainAuthorityService();
             $result = $service->runCheck($url);
@@ -829,7 +864,7 @@ class WebsiteController extends Controller
                 return back()->with('error', 'Failed to run Domain Authority check. The API may be temporarily unavailable or the URL may be unreachable. Please try again.');
             }
 
-            DomainAuthority::create([
+            $domainAuthority =             $domainAuthority = DomainAuthority::create([
                 'website_id' => $website->id,
                 'domain_authority' => $result['domain_authority'] ?? null,
                 'page_authority' => $result['page_authority'] ?? null,
@@ -847,6 +882,22 @@ class WebsiteController extends Controller
                     'website_id' => $website->id,
                     'error' => $e->getMessage()
                 ]);
+            }
+
+            // Send email report if requested
+            if ($sendEmail) {
+                try {
+                    $user = auth()->user();
+                    if ($user && $user->email) {
+                        \Illuminate\Support\Facades\Mail::to($user->email)
+                            ->send(new \App\Mail\DomainAuthorityReportMail($domainAuthority->fresh(), $website->fresh()));
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to send Domain Authority report email', [
+                        'website_id' => $website->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
             }
 
             return redirect()->route('admin.websites.domain-authority', $website)

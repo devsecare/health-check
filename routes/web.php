@@ -7,6 +7,58 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// Test Email Route (for development/testing only)
+Route::get('/test-email', function () {
+    try {
+        // Get or create a sample website
+        $website = \App\Models\Website::first();
+        if (!$website) {
+            $website = \App\Models\Website::create([
+                'name' => 'Test Website',
+                'url' => 'https://example.com',
+            ]);
+        }
+
+        // Get or create a sample PageSpeed insight
+        $insight = $website->pageSpeedInsights()->latest()->first();
+        if (!$insight) {
+            $insight = \App\Models\PageSpeedInsight::create([
+                'website_id' => $website->id,
+                'strategy' => 'mobile',
+                'performance_score' => 85,
+                'accessibility_score' => 92,
+                'seo_score' => 95,
+                'best_practices_score' => 88,
+                'lcp' => 2.5,
+                'fcp' => 1.8,
+                'cls' => 0.1,
+                'tbt' => 200,
+                'si' => 3.2,
+                'ttfb' => 400,
+                'interactive' => 3.5,
+                'raw_data' => json_encode(['test' => 'data']),
+            ]);
+        }
+
+        // Send test email
+        \Illuminate\Support\Facades\Mail::to('developers@ecareinfoway.com')
+            ->send(new \App\Mail\PageSpeedReportMail($insight, $website));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Test email sent successfully to developers@ecareinfoway.com',
+            'email_type' => 'PageSpeed Report',
+            'website' => $website->name,
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to send test email: ' . $e->getMessage(),
+            'error' => $e->getTraceAsString(),
+        ], 500);
+    }
+})->name('test.email');
+
 // Authentication Routes
 Route::get('/login', [App\Http\Controllers\Auth\LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [App\Http\Controllers\Auth\LoginController::class, 'login']);

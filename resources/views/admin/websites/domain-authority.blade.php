@@ -36,8 +36,12 @@
                 </p>
             </div>
 
-            <form id="run-da-form" action="{{ route('admin.websites.domain-authority.run', $website) }}" method="POST">
+            <form id="run-da-form" action="{{ route('admin.websites.domain-authority.run', $website) }}" method="POST" class="space-y-4">
                 @csrf
+                <div class="flex items-center space-x-2">
+                    <input type="checkbox" name="send_email" value="1" id="send_email_da" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                    <label for="send_email_da" class="text-sm text-gray-700 dark:text-gray-300">Send email report when complete</label>
+                </div>
                 <button type="submit" id="run-da-btn" class="group px-6 py-2.5 rounded-lg shadow-sm hover:shadow transition-all duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed" style="background-color: #2563eb; border: none; cursor: pointer;">
                     <span class="flex items-center justify-center" style="color: #ffffff !important;">
                         <svg id="run-da-icon" class="w-5 h-5 mr-2 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #ffffff !important;">
@@ -56,13 +60,20 @@
     @else
     <!-- Run New Check Button -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-        <form id="run-new-da-form" action="{{ route('admin.websites.domain-authority.run', $website) }}" method="POST" class="flex items-center justify-between">
+        <form id="run-new-da-form" action="{{ route('admin.websites.domain-authority.run', $website) }}" method="POST" class="space-y-4">
             @csrf
-            <div>
-                <h3 class="text-sm font-medium text-gray-900 dark:text-white">Last check: {{ $latestCheck->created_at->format('M d, Y H:i') }}</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Run a new check to get updated Domain Authority data</p>
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-900 dark:text-white">Last check: {{ $latestCheck->created_at->format('M d, Y H:i') }}</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Run a new check to get updated Domain Authority data</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <input type="checkbox" name="send_email" value="1" id="send_email_new_da" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                    <label for="send_email_new_da" class="text-sm text-gray-700 dark:text-gray-300">Send email report</label>
+                </div>
             </div>
-            <button type="submit" id="run-new-da-btn" class="px-6 py-2 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed" style="background-color: #2563eb; color: #ffffff; border: none;">
+            <div class="flex justify-end">
+                <button type="submit" id="run-new-da-btn" class="px-6 py-2 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed" style="background-color: #2563eb; color: #ffffff; border: none;">
                 <span class="flex items-center space-x-2">
                     <svg id="run-new-da-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -74,6 +85,7 @@
                     <span id="run-new-da-text">Run New Check</span>
                 </span>
             </button>
+            </div>
         </form>
     </div>
 

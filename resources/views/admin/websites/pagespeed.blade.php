@@ -22,11 +22,11 @@
         <div class="flex items-center justify-between">
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Testing Strategy:</span>
             <div class="flex space-x-2">
-                <a href="{{ route('admin.websites.pagespeed', ['website' => $website->id, 'strategy' => 'mobile']) }}" 
+                <a href="{{ route('admin.websites.pagespeed', ['website' => $website->id, 'strategy' => 'mobile']) }}"
                    class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ $strategy === 'mobile' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
                     Mobile
                 </a>
-                <a href="{{ route('admin.websites.pagespeed', ['website' => $website->id, 'strategy' => 'desktop']) }}" 
+                <a href="{{ route('admin.websites.pagespeed', ['website' => $website->id, 'strategy' => 'desktop']) }}"
                    class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ $strategy === 'desktop' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
                     Desktop
                 </a>
@@ -47,7 +47,7 @@
                     </svg>
                 </div>
             </div>
-            
+
             <!-- Text Content -->
             <div class="text-center mb-10 max-w-lg">
                 <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">No PageSpeed test results</h3>
@@ -81,11 +81,15 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Action Button -->
-            <form id="run-first-test-form" action="{{ route('admin.websites.pagespeed.run', $website) }}" method="POST" class="w-full max-w-sm">
+            <form id="run-first-test-form" action="{{ route('admin.websites.pagespeed.run', $website) }}" method="POST" class="w-full max-w-sm space-y-4">
                 @csrf
                 <input type="hidden" name="strategy" value="{{ $strategy }}">
+                <div class="flex items-center space-x-2">
+                    <input type="checkbox" name="send_email" value="1" id="send_email_first" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                    <label for="send_email_first" class="text-sm text-gray-700 dark:text-gray-300">Send email report when complete</label>
+                </div>
                 <button type="submit" id="run-first-test-btn" class="group w-full px-8 py-4 rounded-xl shadow-lg hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none" style="background-color: #2563eb; border: none; cursor: pointer;">
                     <span class="flex items-center justify-center" style="color: #ffffff !important;">
                         <svg id="run-first-icon" class="w-6 h-6 mr-3 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #ffffff !important; stroke: #ffffff;">
@@ -99,7 +103,7 @@
                     </span>
                 </button>
             </form>
-            
+
             <!-- Info Note -->
             <div class="mt-8 flex items-center justify-center space-x-2 text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 px-4 py-2 rounded-lg">
                 <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,14 +116,21 @@
     @else
     <!-- Run New Test Button -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-        <form id="run-test-form" action="{{ route('admin.websites.pagespeed.run', $website) }}" method="POST" class="flex items-center justify-between">
+        <form id="run-test-form" action="{{ route('admin.websites.pagespeed.run', $website) }}" method="POST" class="space-y-4">
             @csrf
             <input type="hidden" name="strategy" value="{{ $strategy }}">
-            <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">Last tested: {{ $latestInsight->created_at->diffForHumans() }}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">Run a new test to get updated results</p>
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-900 dark:text-white">Last tested: {{ $latestInsight->created_at->diffForHumans() }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Run a new test to get updated results</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <input type="checkbox" name="send_email" value="1" id="send_email_new" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                    <label for="send_email_new" class="text-sm text-gray-700 dark:text-gray-300">Send email report</label>
+                </div>
             </div>
-            <button type="submit" id="run-test-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            <div class="flex justify-end">
+                <button type="submit" id="run-test-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
                 <svg id="run-test-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                 </svg>
@@ -270,12 +281,12 @@
     @if($screenshots && isset($screenshots['final']))
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Screenshot</h2>
-        
+
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-900/50">
             <div class="p-4 flex justify-center">
                 <div class="relative max-w-full">
-                    <img src="{{ $screenshots['final'] }}" 
-                         alt="Screenshot of {{ $website->name }}" 
+                    <img src="{{ $screenshots['final'] }}"
+                         alt="Screenshot of {{ $website->name }}"
                          class="max-w-full h-auto rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-90 transition-opacity"
                          onclick="openScreenshotModal('{{ $screenshots['final'] }}', '')"
                          title="Click to view larger"
@@ -366,14 +377,14 @@
     @if(!empty($insightsWithResources))
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">INSIGHTS</h2>
-        
+
         <div class="space-y-4">
             @foreach($insightsWithResources as $index => $insight)
                 @if($insight['hasResources'] && !empty($insight['items']))
                     @php
                         $insightId = 'insight-' . str_replace(['-', '_'], '', $insight['key']) . '-' . $index;
                         $isRenderBlocking = $insight['key'] === 'render-blocking-resources';
-                        
+
                         // Calculate savings text - prefer displayValue if available (matches Google's format)
                         if ($isRenderBlocking) {
                             // For render-blocking, displayValue might be like "2,620 ms" or we use wastedMs
@@ -401,7 +412,7 @@
                                 }
                                 // Use calculated total or fallback to insight-level wastedBytes
                                 $totalWastedBytes = $totalWastedBytes > 0 ? $totalWastedBytes : ($insight['wastedBytes'] ?? 0);
-                                
+
                                 if ($totalWastedBytes >= 1024 * 1024) {
                                     $savingsText = number_format($totalWastedBytes / (1024 * 1024), 1) . ' MiB';
                                 } elseif ($totalWastedBytes >= 1024) {
@@ -415,7 +426,7 @@
                         }
                         $hasWastedBytes = !$isRenderBlocking && ($insight['wastedBytes'] > 0 || isset($insight['items']));
                     @endphp
-                    
+
                     <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                         <button onclick="toggleInsight('{{ $insightId }}')" class="w-full px-6 py-4 text-left bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors">
                             <div class="flex items-center justify-between">
@@ -433,13 +444,13 @@
                                 </svg>
                             </div>
                         </button>
-                        
+
                         <div id="{{ $insightId }}-content" class="hidden border-t border-gray-200 dark:border-gray-700 {{ $isRenderBlocking ? 'expanded-by-default' : '' }}">
                             <div class="p-6">
                                 <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
                                     {{ $insight['description'] }}
                                 </p>
-                                
+
                                 <!-- Third Party Toggle -->
                                 @php
                                     $thirdPartyCount = 0;
@@ -460,7 +471,7 @@
                                     </label>
                                 </div>
                                 @endif
-                                
+
                                 <!-- Resources Table -->
                                 @php
                                     $grouped = $latestInsight->groupResourcesByDomain($insight['items'], $website->url, $insight['key']);
@@ -504,7 +515,7 @@
                                                         </td>
                                                     @endif
                                                 </tr>
-                                                
+
                                                 <!-- Resources in Group -->
                                                 @foreach($group['resources'] as $resource)
                                                     @php
@@ -735,7 +746,7 @@
 function toggleDebug() {
     const content = document.getElementById('debug-content');
     const toggleText = document.getElementById('debug-toggle-text');
-    
+
     if (content.classList.contains('hidden')) {
         content.classList.remove('hidden');
         toggleText.textContent = 'Hide';
@@ -751,7 +762,7 @@ function copyRawData() {
     const copyBtn = document.getElementById('copy-btn');
     const copyText = document.getElementById('copy-text');
     const copySuccess = document.getElementById('copy-success');
-    
+
     // Create a temporary textarea to copy text
     const textarea = document.createElement('textarea');
     textarea.value = text;
@@ -759,16 +770,16 @@ function copyRawData() {
     textarea.style.opacity = '0';
     document.body.appendChild(textarea);
     textarea.select();
-    
+
     try {
         document.execCommand('copy');
-        
+
         // Show success message
         copyText.textContent = 'Copied!';
         copySuccess.classList.remove('hidden');
         copyBtn.classList.add('bg-green-100', 'dark:bg-green-900/30');
         copyBtn.classList.remove('bg-blue-100', 'dark:bg-blue-900/30');
-        
+
         // Reset after 2 seconds
         setTimeout(() => {
             copyText.textContent = 'Copy JSON';
@@ -783,14 +794,14 @@ function copyRawData() {
             copyText.textContent = 'Copy JSON';
         }, 2000);
     }
-    
+
     document.body.removeChild(textarea);
 }
 
 function toggleInsight(insightId) {
     const content = document.getElementById(insightId + '-content');
     const arrow = document.getElementById(insightId + '-arrow');
-    
+
     if (content.classList.contains('hidden')) {
         content.classList.remove('hidden');
         if (arrow) arrow.classList.add('rotate-180');
@@ -804,7 +815,7 @@ function toggleThirdPartyResources(index) {
     const checkbox = document.getElementById('show-third-party-' + index);
     const insightId = checkbox.getAttribute('data-insight-id');
     const rows = document.querySelectorAll('.' + 'third-party-resource-' + index);
-    
+
     rows.forEach(row => {
         if (checkbox.checked) {
             row.style.display = '';
@@ -824,14 +835,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const icon = document.getElementById('run-first-icon');
             const spinner = document.getElementById('run-first-spinner');
             const text = document.getElementById('run-first-text');
-            
+
             btn.disabled = true;
             icon.classList.add('hidden');
             spinner.classList.remove('hidden');
             text.textContent = 'Running Test...';
         });
     }
-    
+
     // Run new test form
     const runTestForm = document.getElementById('run-test-form');
     if (runTestForm) {
@@ -840,14 +851,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const icon = document.getElementById('run-test-icon');
             const spinner = document.getElementById('run-test-spinner');
             const text = document.getElementById('run-test-text');
-            
+
             btn.disabled = true;
             icon.classList.add('hidden');
             spinner.classList.remove('hidden');
             text.textContent = 'Running Test...';
         });
     }
-    
+
     // Auto-expand insights with "expanded-by-default" class (e.g., render-blocking)
     document.querySelectorAll('.expanded-by-default').forEach(content => {
         content.classList.remove('hidden');
@@ -865,14 +876,14 @@ function openScreenshotModal(src, timing) {
     const modal = document.getElementById('screenshot-modal');
     const img = document.getElementById('modal-screenshot-img');
     const timeText = document.getElementById('modal-screenshot-time');
-    
+
     img.src = src;
     if (timing) {
         timeText.textContent = 'Time: ' + timing;
     } else {
         timeText.textContent = '';
     }
-    
+
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }

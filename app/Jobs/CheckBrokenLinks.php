@@ -50,7 +50,7 @@ class CheckBrokenLinks implements ShouldQueue
             // Set execution time limit for the job
             set_time_limit($this->timeout);
             ini_set('max_execution_time', $this->timeout);
-            
+
             // Create service with progress callback
             $service = new BrokenLinksService();
             $checkRecord = $this->checkRecord;
@@ -88,8 +88,8 @@ class CheckBrokenLinks implements ShouldQueue
             // Send email report if requested
             if ($this->sendEmail) {
                 try {
-                    // Get the first user's email (in a real app, you'd get the user who initiated the check)
-                    $user = \App\Models\User::first();
+                    // Get the user who initiated the check (use website owner or super admin)
+                    $user = $this->website->users()->first() ?? \App\Models\User::where('role', 'super_admin')->first();
                     if ($user && $user->email) {
                         Mail::to($user->email)->send(new BrokenLinksReportMail($this->checkRecord->fresh(), $this->website->fresh()));
                         Log::info('Broken Links Report Email Sent', [
@@ -111,7 +111,7 @@ class CheckBrokenLinks implements ShouldQueue
                 'total_checked' => $result['total_checked'] ?? 0,
                 'total_broken' => $result['total_broken'] ?? 0
             ]);
-                
+
         } catch (\Exception $e) {
             $this->checkRecord->update([
                 'status' => 'failed',
@@ -124,7 +124,7 @@ class CheckBrokenLinks implements ShouldQueue
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             throw $e; // Re-throw so Laravel marks the job as failed
         }
     }
