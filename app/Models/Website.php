@@ -62,4 +62,20 @@ class Website extends Model
     {
         return $this->brokenLinksChecks()->latest()->first();
     }
+
+    /**
+     * Get domain authority checks for the website
+     */
+    public function domainAuthorities(): HasMany
+    {
+        return $this->hasMany(DomainAuthority::class);
+    }
+
+    /**
+     * Get the latest domain authority check
+     */
+    public function latestDomainAuthority()
+    {
+        return $this->domainAuthorities()->latest()->first();
+    }
 }

@@ -615,6 +615,201 @@
         </div>
         @endif
     </div>
+
+    <!-- Domain Authority Overview Section -->
+    <div class="space-y-6 mt-8">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Domain Authority Overview</h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Domain Authority analytics and history across all websites</p>
+        </div>
+
+        <!-- Domain Authority Stats Cards -->
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Checks</h3>
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($totalDomainAuthorityChecks ?? 0) }}</p>
+                <p class="mt-2 text-sm text-blue-600 dark:text-blue-400">{{ number_format($domainAuthorityChecksThisMonth ?? 0) }} this month</p>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Websites Tracked</h3>
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                    </svg>
+                </div>
+                <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($websitesWithDomainAuthority ?? 0) }}</p>
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">out of {{ number_format($totalWebsites ?? 0) }} websites</p>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Avg. Domain Authority</h3>
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                </div>
+                @php
+                    $daScore = round($avgDomainAuthority ?? 0);
+                    $daColor = ($daScore >= 50) ? 'text-green-600 dark:text-green-400' : (($daScore >= 30) ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400');
+                @endphp
+                <p class="text-3xl font-bold {{ $daColor }}">{{ $daScore }}</p>
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">out of 100</p>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Backlinks</h3>
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                </div>
+                <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($totalBacklinks ?? 0) }}</p>
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">{{ number_format($totalReferringDomains ?? 0) }} referring domains</p>
+            </div>
+        </div>
+
+        <!-- Domain Authority History Chart -->
+        @php
+            $maxDA = ($domainAuthorityByMonth ?? collect())->max(function($item) { return $item->avg_domain_authority ?? 0; }) ?: 100;
+            $daChartData = collect(range(1, 12))->map(function($month) use ($domainAuthorityByMonth, $currentYear) {
+                $monthData = ($domainAuthorityByMonth ?? collect())->firstWhere('month', $month);
+                return [
+                    'month' => $month,
+                    'da' => $monthData ? round($monthData->avg_domain_authority) : null,
+                    'year' => $monthData ? $monthData->year : $currentYear
+                ];
+            });
+        @endphp
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">Domain Authority History</h3>
+            <div class="h-64 flex items-end justify-center space-x-2">
+                @foreach($daChartData as $index => $data)
+                    @if($data['da'] !== null)
+                        @php
+                            $height = $maxDA > 0 ? ($data['da'] / $maxDA) * 100 : 0;
+                            $barHeight = max($height, 10);
+                            if ($data['da'] >= 50) {
+                                $gradientColors = 'linear-gradient(to top, #16a34a, #4ade80)';
+                                $barColor = 'from-green-600 to-green-400';
+                            } elseif ($data['da'] >= 30) {
+                                $gradientColors = 'linear-gradient(to top, #ca8a04, #eab308)';
+                                $barColor = 'from-yellow-600 to-yellow-400';
+                            } else {
+                                $gradientColors = 'linear-gradient(to top, #dc2626, #ef4444)';
+                                $barColor = 'from-red-600 to-red-400';
+                            }
+                        @endphp
+                        <div class="flex-1 flex flex-col items-center">
+                            <div class="w-full bg-gradient-to-t {{ $barColor }} rounded-t-lg mb-2" style="height: {{ $barHeight }}%; min-height: 30px; background-image: {{ $gradientColors }}; background-color: {{ $data['da'] >= 50 ? '#16a34a' : ($data['da'] >= 30 ? '#ca8a04' : '#dc2626') }};"></div>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">{{ $monthNames[$index] }}</span>
+                            <span class="text-xs font-medium text-gray-700 dark:text-gray-300 mt-1">{{ $data['da'] }}</span>
+                        </div>
+                    @else
+                        <div class="flex-1 flex flex-col items-center">
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-t-lg mb-2" style="height: 5%; min-height: 10px;"></div>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">{{ $monthNames[$index] }}</span>
+                            <span class="text-xs text-gray-400 dark:text-gray-500 mt-1">-</span>
+                        </div>
+                    @endif
+                @endforeach
+            </div>
+        </div>
+
+        <!-- Top Domain Authority Websites -->
+        @if(($topDomainAuthorityWebsites ?? collect())->count() > 0)
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Domain Authority Websites</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-900/50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Website</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Avg. Domain Authority</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        @foreach($topDomainAuthorityWebsites as $website)
+                            @php
+                                $da = round($website->avg_domain_authority ?? 0);
+                                $daColor = ($da >= 50) ? 'text-green-600 dark:text-green-400' : (($da >= 30) ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400');
+                                $badgeColor = ($da >= 50) ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : (($da >= 30) ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400');
+                            @endphp
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                <td class="px-4 py-3">
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $website->name }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ $website->url }}</div>
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    <span class="text-lg font-bold {{ $daColor }}">{{ $da }}</span>
+                                    <span class="text-sm text-gray-500 dark:text-gray-400">/ 100</span>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full {{ $badgeColor }}">
+                                        {{ $da >= 50 ? 'Excellent' : ($da >= 30 ? 'Good' : 'Needs Improvement') }}
+                                    </span>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
+
+        <!-- Recent Domain Authority Checks -->
+        @if(($recentDomainAuthorityChecks ?? collect())->count() > 0)
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Domain Authority Checks</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-900/50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Website</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Domain Authority</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Page Authority</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Backlinks</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        @foreach($recentDomainAuthorityChecks as $check)
+                            @php
+                                $da = $check->domain_authority ?? 0;
+                                $pa = $check->page_authority ?? 0;
+                                $daColor = ($da >= 50) ? 'text-green-600 dark:text-green-400' : (($da >= 30) ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400');
+                                $backlinks = $check->backlinks ?? 0;
+                            @endphp
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                <td class="px-4 py-3">
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $check->website->name ?? 'N/A' }}</div>
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    <span class="text-sm font-bold {{ $daColor }}">{{ $da ?? 'N/A' }}</span>
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    <span class="text-sm font-medium text-gray-900 dark:text-white">{{ $pa ?? 'N/A' }}</span>
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    <span class="text-sm font-medium text-gray-900 dark:text-white">{{ number_format($backlinks) }}</span>
+                                </td>
+                                <td class="px-4 py-3 text-right text-sm text-gray-500 dark:text-gray-400">
+                                    {{ $check->created_at->format('M d, Y H:i') }}
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
+    </div>
 </div>
 @endsection
 

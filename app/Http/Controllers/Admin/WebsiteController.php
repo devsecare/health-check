@@ -7,9 +7,11 @@ use App\Models\Website;
 use App\Models\PageSpeedInsight;
 use App\Models\SeoAudit;
 use App\Models\BrokenLink;
+use App\Models\DomainAuthority;
 use App\Services\PageSpeedInsightsService;
 use App\Services\SeoAuditService;
 use App\Services\BrokenLinksService;
+use App\Services\DomainAuthorityService;
 use App\Services\NotificationService;
 use App\Jobs\CheckBrokenLinks;
 use Illuminate\Http\Request;
@@ -98,9 +100,9 @@ class WebsiteController extends Controller
             // Increase execution time limit for PageSpeed API calls (can take 30-120 seconds)
             set_time_limit(180); // 3 minutes
             ini_set('max_execution_time', 180);
-            
+
             $strategy = $request->input('strategy', 'mobile');
-            
+
             $service = new PageSpeedInsightsService();
             $result = $service->runTest($website->url, $strategy);
 
@@ -137,7 +139,7 @@ class WebsiteController extends Controller
 
             return redirect()->route('admin.websites.pagespeed', $website)
                 ->with('success', 'PageSpeed Insights test completed successfully!');
-                
+
         } catch (\Exception $e) {
             \Log::error('PageSpeed Test Error', [
                 'website_id' => $website->id,
@@ -145,7 +147,7 @@ class WebsiteController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return back()->with('error', 'An error occurred while running the PageSpeed test: ' . $e->getMessage());
         }
     }
@@ -156,7 +158,7 @@ class WebsiteController extends Controller
     public function showPageSpeed(Website $website, Request $request)
     {
         $strategy = $request->input('strategy', 'mobile');
-        
+
         $latestInsight = $website->latestPageSpeedInsight($strategy);
         $allInsights = $website->pageSpeedInsights()
             ->where('strategy', $strategy)
@@ -174,9 +176,9 @@ class WebsiteController extends Controller
         try {
             set_time_limit(180);
             ini_set('max_execution_time', 180);
-            
+
             $url = $request->input('url', $website->url);
-            
+
             $service = new SeoAuditService();
             $result = $service->runAudit($url);
 
@@ -195,7 +197,7 @@ class WebsiteController extends Controller
             $audit->open_graph = $result['open_graph'] ?? [];
             $audit->robots_txt = $result['robots_txt'] ?? [];
             $audit->sitemap = $result['sitemap'] ?? [];
-            
+
             $overallScore = $audit->calculateOverallScore();
 
             SeoAudit::create([
@@ -226,7 +228,7 @@ class WebsiteController extends Controller
 
             return redirect()->route('admin.websites.seo-audit', $website)
                 ->with('success', 'SEO audit completed successfully!');
-                
+
         } catch (\Exception $e) {
             \Log::error('SEO Audit Error', [
                 'website_id' => $website->id,
@@ -234,7 +236,7 @@ class WebsiteController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return back()->with('error', 'An error occurred while running the SEO audit: ' . $e->getMessage());
         }
     }
@@ -259,16 +261,16 @@ class WebsiteController extends Controller
     {
         try {
             $checkType = $request->input('check_type', 'whole_website');
-            $url = $checkType === 'single_page' 
+            $url = $checkType === 'single_page'
                 ? ($request->input('page_url', $website->url))
                 : ($request->input('url', $website->url));
-            
+
             // For single page, set depth to 0 and pages to 1
             $maxDepth = $checkType === 'single_page' ? 0 : $request->input('max_depth', 2);
             $maxPages = $checkType === 'single_page' ? 1 : $request->input('max_pages', 30);
-            
+
             $sendEmail = $request->has('send_email') && $request->input('send_email') == '1';
-            
+
             // Create a pending check record
             $checkRecord = BrokenLink::create([
                 'website_id' => $website->id,
@@ -280,10 +282,10 @@ class WebsiteController extends Controller
 
             // For all requests, use background execution to avoid timeout
             // Return response immediately, then run check after response is sent
-            
+
             // Check if AJAX request
             $isAjax = $request->wantsJson() || $request->ajax();
-            
+
             // If FastCGI is available, finish request and continue processing
             if (function_exists('fastcgi_finish_request')) {
                 // Send response to client immediately
@@ -300,25 +302,25 @@ class WebsiteController extends Controller
                         ->with('success', 'Broken links check started. Progress will update automatically.');
                     $redirect->send();
                 }
-                
+
                 // Continue processing in background (won't timeout)
                 ignore_user_abort(true);
                 set_time_limit(600); // 10 minutes for background process
                 ini_set('max_execution_time', 600);
-                
+
                 $this->executeBrokenLinksCheck($checkRecord, $website, $url, $maxDepth, $maxPages, $sendEmail);
-                
+
                 // Response already sent
                 exit;
             }
-            
+
             // Fallback: Use register_shutdown_function for non-FastCGI
             register_shutdown_function(function() use ($checkRecord, $website, $url, $maxDepth, $maxPages, $sendEmail) {
                 ignore_user_abort(true);
                 set_time_limit(300);
                 $this->executeBrokenLinksCheck($checkRecord, $website, $url, $maxDepth, $maxPages, $sendEmail);
             });
-            
+
             // Return appropriate response
             if ($isAjax) {
                 return response()->json([
@@ -327,11 +329,11 @@ class WebsiteController extends Controller
                     'check_id' => $checkRecord->id,
                 ]);
             }
-            
+
             return redirect()->route('admin.websites.broken-links', $website)
                 ->with('success', 'Broken links check started. Progress will update automatically.');
 
-                
+
         } catch (\Exception $e) {
             \Log::error('Broken Links Check Error', [
                 'website_id' => $website->id,
@@ -339,7 +341,7 @@ class WebsiteController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             // Mark check as failed if it exists
             if (isset($checkRecord)) {
                 $checkRecord->update([
@@ -347,7 +349,7 @@ class WebsiteController extends Controller
                     'progress' => 0
                 ]);
             }
-            
+
             return back()->with('error', 'An error occurred during the broken links check: ' . $e->getMessage());
         }
     }
@@ -363,14 +365,14 @@ class WebsiteController extends Controller
                 'website_id' => $website->id,
                 'url' => $url
             ]);
-            
+
             // Update status to running with timestamp
             $checkRecord->update([
                 'status' => 'running',
                 'progress' => 5,
                 'updated_at' => now() // Ensure updated_at is set
             ]);
-            
+
             // Track broken links in progress callback so we can save them even if final save fails
             $capturedBrokenLinks = [];
             $capturedTotalChecked = 0;
@@ -383,7 +385,7 @@ class WebsiteController extends Controller
                     'progress' => min(100, max(0, $progress)),
                     'status' => 'running' // Ensure status stays as running during progress updates
                 ];
-                
+
                 // Update total_checked and total_broken if provided
                 if ($totalChecked !== null) {
                     $updateData['total_checked'] = $totalChecked;
@@ -392,7 +394,7 @@ class WebsiteController extends Controller
                 if ($totalBroken !== null) {
                     $updateData['total_broken'] = $totalBroken;
                     $capturedTotalBroken = $totalBroken;
-                    
+
                     // Always try to capture broken links data whenever we have a count update
                     // This ensures we save data even if the final save fails or the process hangs
                     if ($totalBroken > 0) {
@@ -412,7 +414,7 @@ class WebsiteController extends Controller
                         }
                     }
                 }
-                
+
                 $checkRecord->update($updateData);
             });
 
@@ -425,9 +427,9 @@ class WebsiteController extends Controller
                     'maxDepth' => $maxDepth,
                     'maxPages' => $maxPages
                 ]);
-                
+
                 $result = $service->runCheck($url, $maxDepth, $maxPages);
-                
+
                 \Log::info('Service runCheck completed', [
                     'check_id' => $checkRecord->id,
                     'result_exists' => $result !== null,
@@ -452,7 +454,7 @@ class WebsiteController extends Controller
                     'total_checked' => 0,
                     'total_broken' => 0
                 ]);
-                
+
                 \Log::error('Broken Links Check: No result returned', [
                     'website_id' => $website->id,
                     'url' => $url
@@ -463,10 +465,10 @@ class WebsiteController extends Controller
             // Ensure we have valid counts from result (should be set by final progress update)
             $totalChecked = $result['total_checked'] ?? $checkRecord->fresh()->total_checked ?? 0;
             $totalBroken = $result['total_broken'] ?? $checkRecord->fresh()->total_broken ?? 0;
-            
+
             // Refresh the record to get latest values from progress callback
             $checkRecord->refresh();
-            
+
             // Use values from database if they're more recent (from progress callback)
             if ($checkRecord->total_checked > $totalChecked) {
                 $totalChecked = $checkRecord->total_checked;
@@ -480,7 +482,7 @@ class WebsiteController extends Controller
             if (!is_array($brokenLinksData)) {
                 $brokenLinksData = [];
             }
-            
+
             // If result is empty but we captured data from progress callback, use that
             if (empty($brokenLinksData) && !empty($capturedBrokenLinks)) {
                 \Log::info('Using captured broken links from progress callback', [
@@ -489,7 +491,7 @@ class WebsiteController extends Controller
                 ]);
                 $brokenLinksData = $capturedBrokenLinks;
             }
-            
+
             // If we have broken links count but no data, something went wrong
             if (empty($brokenLinksData) && $totalBroken > 0) {
                 \Log::warning('Broken links data is empty but total_broken > 0', [
@@ -502,7 +504,7 @@ class WebsiteController extends Controller
                     'captured_total_broken' => $capturedTotalBroken
                 ]);
             }
-            
+
             // Log for debugging
             \Log::info('Saving broken links data', [
                 'check_id' => $checkRecord->id,
@@ -511,7 +513,7 @@ class WebsiteController extends Controller
                 'is_array' => is_array($brokenLinksData),
                 'result_total_broken' => $result['total_broken'] ?? 'not set'
             ]);
-            
+
             // Update with final results - FORCE status to completed and progress to 100
             $updateResult = $checkRecord->update([
                 'status' => 'completed',
@@ -522,12 +524,12 @@ class WebsiteController extends Controller
                 'total_broken' => $totalBroken,
                 'raw_data' => json_encode($result),
             ]);
-            
+
             \Log::info('Update result', [
                 'check_id' => $checkRecord->id,
                 'update_result' => $updateResult
             ]);
-            
+
             // Verify the data was saved
             $checkRecord->refresh();
             \Log::info('Broken links data after save', [
@@ -536,7 +538,7 @@ class WebsiteController extends Controller
                 'broken_links_data_type' => gettype($checkRecord->broken_links_data),
                 'total_broken' => $checkRecord->total_broken
             ]);
-            
+
             // Double-check that status is updated (sometimes update() doesn't persist immediately)
             $checkRecord->refresh();
             if ($checkRecord->status !== 'completed') {
@@ -548,7 +550,7 @@ class WebsiteController extends Controller
                 $checkRecord->progress = 100;
                 $checkRecord->save();
             }
-            
+
             \Log::info('Broken Links Check Final Update', [
                 'website_id' => $website->id,
                 'check_id' => $checkRecord->id,
@@ -589,13 +591,13 @@ class WebsiteController extends Controller
                 'total_checked' => $result['total_checked'] ?? 0,
                 'total_broken' => $result['total_broken'] ?? 0
             ]);
-            
+
         } catch (\Exception $e) {
             $checkRecord->update([
                 'status' => 'failed',
                 'progress' => 0
             ]);
-            
+
             \Log::error('Background Broken Links Check Error', [
                 'website_id' => $website->id,
                 'url' => $url,
@@ -611,7 +613,7 @@ class WebsiteController extends Controller
     public function getBrokenLinksProgress(Website $website, Request $request)
     {
         $checkId = $request->input('check_id');
-        
+
         if ($checkId) {
             $check = BrokenLink::where('id', $checkId)
                 ->where('website_id', $website->id)
@@ -635,7 +637,7 @@ class WebsiteController extends Controller
             $runningTime = $check->created_at->diffInSeconds(now());
             $isStuckAt95 = ($check->progress >= 95 && $runningTime > 60); // Stuck at 95% for 1 minute
             $isRunningTooLong = $runningTime > 120; // Running for more than 2 minutes
-            
+
             if ($isStuckAt95 || $isRunningTooLong) {
                 \Log::warning('Auto-completing stuck broken links check', [
                     'check_id' => $check->id,
@@ -644,16 +646,16 @@ class WebsiteController extends Controller
                     'total_checked' => $check->total_checked,
                     'reason' => $isStuckAt95 ? 'stuck_at_95' : 'running_too_long'
                 ]);
-                
+
                 // Force completion with current values (at least mark initial URL as checked if 0)
                 $totalChecked = $check->total_checked ?? 0;
                 $totalBroken = $check->total_broken ?? 0;
-                
+
                 // If no pages were checked, mark the initial URL as checked
                 if ($totalChecked === 0) {
                     $totalChecked = 1;
                 }
-                
+
                 // Try to extract broken_links_data from raw_data if available
                 $brokenLinksData = [];
                 if ($check->raw_data) {
@@ -662,7 +664,7 @@ class WebsiteController extends Controller
                         $brokenLinksData = $rawData['broken_links'];
                     }
                 }
-                
+
                 $check->update([
                     'status' => 'completed',
                     'progress' => 100,
@@ -670,7 +672,7 @@ class WebsiteController extends Controller
                     'total_broken' => $totalBroken,
                     'broken_links_data' => !empty($brokenLinksData) ? $brokenLinksData : null,
                 ]);
-                
+
                 // Refresh to get updated values
                 $check->refresh();
             }
@@ -694,17 +696,112 @@ class WebsiteController extends Controller
             ->whereIn('status', ['completed', 'failed'])
             ->latest()
             ->first();
-            
+
         // Only show progress if check is actually pending or running (not failed/cancelled)
         $activeCheck = $website->brokenLinksChecks()
             ->whereIn('status', ['pending', 'running'])
             ->latest()
             ->first();
-            
+
         $allChecks = $website->brokenLinksChecks()
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
         return view('admin.websites.broken-links', compact('website', 'latestCheck', 'activeCheck', 'allChecks'));
+    }
+
+    /**
+     * Run Domain Authority check for a website
+     */
+    public function runDomainAuthorityCheck(Website $website, Request $request)
+    {
+        try {
+            set_time_limit(180);
+            ini_set('max_execution_time', 180);
+
+            $url = $request->input('url', $website->url);
+
+            $service = new DomainAuthorityService();
+            $result = $service->runCheck($url);
+
+            if (!$result) {
+                return back()->with('error', 'Failed to run Domain Authority check. The API may be temporarily unavailable or the URL may be unreachable. Please try again.');
+            }
+
+            DomainAuthority::create([
+                'website_id' => $website->id,
+                'domain_authority' => $result['domain_authority'] ?? null,
+                'page_authority' => $result['page_authority'] ?? null,
+                'spam_score' => $result['spam_score'] ?? null,
+                'backlinks' => $result['backlinks'] ?? null,
+                'referring_domains' => $result['referring_domains'] ?? null,
+                'raw_data' => $result['raw_data'] ?? null,
+            ]);
+
+            // Create notification for Domain Authority check completion
+            try {
+                NotificationService::notifyDomainAuthorityCheckCompleted($website, $result['domain_authority'] ?? 0);
+            } catch (\Exception $e) {
+                \Log::warning('Failed to create notification for Domain Authority check', [
+                    'website_id' => $website->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+            return redirect()->route('admin.websites.domain-authority', $website)
+                ->with('success', 'Domain Authority check completed successfully!');
+
+        } catch (\Exception $e) {
+            \Log::error('Domain Authority Check Error', [
+                'website_id' => $website->id,
+                'url' => $url ?? $website->url,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return back()->with('error', 'An error occurred while running the Domain Authority check: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Show Domain Authority results for a website
+     */
+    public function showDomainAuthority(Website $website)
+    {
+        $latestCheck = $website->latestDomainAuthority();
+        $allChecks = $website->domainAuthorities()
+            ->orderBy('created_at', 'desc')
+            ->get(); // Get all checks, not paginated for history
+
+        // Group checks by month for chart (monthly averages)
+        $monthlyData = $website->domainAuthorities()
+            ->whereNotNull('domain_authority')
+            ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, AVG(domain_authority) as avg_da')
+            ->groupBy('month')
+            ->orderBy('month', 'asc')
+            ->get();
+
+        // Prepare chart data from monthly averages
+        $chartLabels = [];
+        $chartData = [];
+        foreach ($monthlyData as $data) {
+            $chartLabels[] = $data->month;
+            $chartData[] = round($data->avg_da);
+        }
+
+        // Also prepare individual check data for detailed history
+        $historyData = $website->domainAuthorities()
+            ->whereNotNull('domain_authority')
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->map(function($check) {
+                return [
+                    'date' => $check->created_at->format('Y-m'),
+                    'domain_authority' => $check->domain_authority,
+                    'created_at' => $check->created_at
+                ];
+            });
+
+        return view('admin.websites.domain-authority', compact('website', 'latestCheck', 'allChecks', 'monthlyData', 'chartLabels', 'chartData', 'historyData'));
     }
 }

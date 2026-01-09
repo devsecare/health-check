@@ -8,6 +8,7 @@ use App\Models\Website;
 use App\Models\PageSpeedInsight;
 use App\Models\SeoAudit;
 use App\Models\BrokenLink;
+use App\Models\DomainAuthority;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -385,6 +386,61 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        // Domain Authority Analytics
+        $totalDomainAuthorityChecks = DomainAuthority::count();
+        $domainAuthorityChecksThisMonth = DomainAuthority::whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->count();
+
+        $websitesWithDomainAuthority = Website::has('domainAuthorities')->count();
+
+        // Average Domain Authority
+        $avgDomainAuthority = DomainAuthority::whereNotNull('domain_authority')
+            ->avg('domain_authority');
+        $avgPageAuthority = DomainAuthority::whereNotNull('page_authority')
+            ->avg('page_authority');
+
+        // Total backlinks and referring domains
+        $totalBacklinks = DomainAuthority::whereNotNull('backlinks')
+            ->sum('backlinks');
+        $totalReferringDomains = DomainAuthority::whereNotNull('referring_domains')
+            ->sum('referring_domains');
+
+        // Domain Authority trends by month
+        $domainAuthorityByMonth = DomainAuthority::select(
+            DB::raw('YEAR(created_at) as year'),
+            DB::raw('MONTH(created_at) as month'),
+            DB::raw('AVG(domain_authority) as avg_domain_authority')
+        )
+            ->whereNotNull('domain_authority')
+            ->groupBy('year', 'month')
+            ->orderBy('year')
+            ->orderBy('month')
+            ->get();
+
+        // Recent domain authority checks
+        $recentDomainAuthorityChecks = DomainAuthority::with('website')
+            ->latest()
+            ->take(10)
+            ->get();
+
+        // Top websites by Domain Authority
+        $topDomainAuthorityWebsites = Website::select('websites.*')
+            ->joinSub(
+                DomainAuthority::select('website_id')
+                    ->selectRaw('AVG(domain_authority) as avg_domain_authority')
+                    ->whereNotNull('domain_authority')
+                    ->groupBy('website_id'),
+                'da_avg',
+                'websites.id',
+                '=',
+                'da_avg.website_id'
+            )
+            ->addSelect('da_avg.avg_domain_authority')
+            ->orderByDesc('da_avg.avg_domain_authority')
+            ->take(5)
+            ->get();
+
         return view('admin.analytics', compact(
             'totalUsers',
             'usersThisMonth',
@@ -420,7 +476,18 @@ class DashboardController extends Controller
             'avgBrokenLinksPerCheck',
             'brokenLinksByMonth',
             'recentBrokenLinksChecks',
-            'websitesWithMostBrokenLinks'
+            'websitesWithMostBrokenLinks',
+            // Domain Authority data
+            'totalDomainAuthorityChecks',
+            'domainAuthorityChecksThisMonth',
+            'websitesWithDomainAuthority',
+            'avgDomainAuthority',
+            'avgPageAuthority',
+            'totalBacklinks',
+            'totalReferringDomains',
+            'domainAuthorityByMonth',
+            'recentDomainAuthorityChecks',
+            'topDomainAuthorityWebsites'
         ));
     }
 

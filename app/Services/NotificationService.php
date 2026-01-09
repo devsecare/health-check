@@ -15,7 +15,7 @@ class NotificationService
     {
         // If no user ID provided, try to get from auth, otherwise create global notification
         $userId = $userId ?? Auth::id();
-        
+
         if ($totalBroken > 0) {
             Notification::create([
                 'user_id' => $userId,
@@ -52,7 +52,7 @@ class NotificationService
     {
         // If no user ID provided, try to get from auth, otherwise create global notification
         $userId = $userId ?? Auth::id();
-        
+
         Notification::create([
             'user_id' => $userId,
             'type' => 'seo_audit',
@@ -73,7 +73,7 @@ class NotificationService
     {
         // If no user ID provided, try to get from auth, otherwise create global notification
         $userId = $userId ?? Auth::id();
-        
+
         Notification::create([
             'user_id' => $userId,
             'type' => 'pagespeed',
@@ -84,6 +84,27 @@ class NotificationService
                 'website_id' => $website->id,
                 'performance_score' => $performanceScore,
                 'strategy' => $strategy,
+            ],
+        ]);
+    }
+
+    /**
+     * Create a notification for Domain Authority check completion
+     */
+    public static function notifyDomainAuthorityCheckCompleted(Website $website, int $domainAuthority, ?int $userId = null): void
+    {
+        // If no user ID provided, try to get from auth, otherwise create global notification
+        $userId = $userId ?? Auth::id();
+
+        Notification::create([
+            'user_id' => $userId,
+            'type' => 'domain_authority',
+            'title' => 'Domain Authority Check Completed',
+            'message' => "Domain Authority check completed for {$website->name}: DA {$domainAuthority}/100",
+            'url' => route('admin.websites.domain-authority', $website),
+            'data' => [
+                'website_id' => $website->id,
+                'domain_authority' => $domainAuthority,
             ],
         ]);
     }
