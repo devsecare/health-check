@@ -1,14 +1,14 @@
 @extends('layouts.admin')
 
-@section('title', 'Edit User')
+@section('title', 'Create User')
 
 @section('content')
 <div class="space-y-6">
     <!-- Page Header -->
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Edit User</h1>
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Update user information</p>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Create User</h1>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Add a new user to the system</p>
         </div>
         <a href="{{ route('admin.users') }}" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
             <span class="flex items-center space-x-2">
@@ -20,11 +20,10 @@
         </a>
     </div>
 
-    <!-- Edit Form -->
+    <!-- Create Form -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <form action="{{ route('admin.users.update', $user) }}" method="POST" class="space-y-6">
+        <form action="{{ route('admin.users.store') }}" method="POST" class="space-y-6">
             @csrf
-            @method('PUT')
 
             <!-- Name -->
             <div>
@@ -35,7 +34,7 @@
                     type="text"
                     id="name"
                     name="name"
-                    value="{{ old('name', $user->name) }}"
+                    value="{{ old('name') }}"
                     required
                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                 @error('name')
@@ -52,7 +51,7 @@
                     type="email"
                     id="email"
                     name="email"
-                    value="{{ old('email', $user->email) }}"
+                    value="{{ old('email') }}"
                     required
                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                 @error('email')
@@ -63,12 +62,13 @@
             <!-- Password -->
             <div>
                 <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    New Password <span class="text-gray-500 dark:text-gray-400 text-xs">(Leave blank to keep current password)</span>
+                    Password
                 </label>
                 <input
                     type="password"
                     id="password"
                     name="password"
+                    required
                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                 @error('password')
                     <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -78,12 +78,13 @@
             <!-- Password Confirmation -->
             <div>
                 <label for="password_confirmation" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Confirm New Password
+                    Confirm Password
                 </label>
                 <input
                     type="password"
                     id="password_confirmation"
                     name="password_confirmation"
+                    required
                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
             </div>
 
@@ -97,8 +98,8 @@
                     name="role"
                     required
                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <option value="user" {{ old('role', $user->role ?? 'user') === 'user' ? 'selected' : '' }}>User</option>
-                    <option value="super_admin" {{ old('role', $user->role ?? 'user') === 'super_admin' ? 'selected' : '' }}>Super Admin</option>
+                    <option value="user" {{ old('role', 'user') === 'user' ? 'selected' : '' }}>User</option>
+                    <option value="super_admin" {{ old('role') === 'super_admin' ? 'selected' : '' }}>Super Admin</option>
                 </select>
                 @error('role')
                     <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -109,7 +110,7 @@
             </div>
 
             <!-- Website Assignment (only for regular users) -->
-            <div id="website-assignment" style="display: {{ old('role', $user->role ?? 'user') === 'user' ? 'block' : 'none' }};">
+            <div id="website-assignment" style="display: {{ old('role', 'user') === 'user' ? 'block' : 'none' }};">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Assign Websites
                 </label>
@@ -120,7 +121,7 @@
                                 type="checkbox"
                                 name="websites[]"
                                 value="{{ $website->id }}"
-                                {{ in_array($website->id, old('websites', $user->websites->pluck('id')->toArray() ?? [])) ? 'checked' : '' }}
+                                {{ in_array($website->id, old('websites', [])) ? 'checked' : '' }}
                                 class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
                             <span class="text-sm text-gray-700 dark:text-gray-300">
                                 {{ $website->name }}
@@ -128,7 +129,7 @@
                             </span>
                         </label>
                     @empty
-                        <p class="text-sm text-gray-500 dark:text-gray-400">No websites available</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">No websites available. Please create websites first.</p>
                     @endforelse
                 </div>
                 @error('websites')
@@ -139,31 +140,13 @@
                 </p>
             </div>
 
-            <!-- User Info Display -->
-            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-2">
-                <div class="flex items-center justify-between">
-                    <span class="text-sm text-gray-600 dark:text-gray-400">User ID:</span>
-                    <span class="text-sm font-medium text-gray-900 dark:text-white">#{{ $user->id }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-sm text-gray-600 dark:text-gray-400">Created:</span>
-                    <span class="text-sm font-medium text-gray-900 dark:text-white">{{ $user->created_at->format('M d, Y') }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-sm text-gray-600 dark:text-gray-400">Email Verified:</span>
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $user->email_verified_at ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' }}">
-                        {{ $user->email_verified_at ? 'Verified' : 'Not Verified' }}
-                    </span>
-                </div>
-            </div>
-
             <!-- Form Actions -->
             <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
                 <a href="{{ route('admin.users') }}" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
                     Cancel
                 </a>
                 <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
-                    Update User
+                    Create User
                 </button>
             </div>
         </form>
@@ -186,4 +169,3 @@
     });
 </script>
 @endsection
-

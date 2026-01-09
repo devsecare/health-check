@@ -14,14 +14,17 @@ class AdminUserSeeder extends Seeder
     public function run(): void
     {
         // Create or update admin user
-        User::updateOrCreate(
+        $admin = User::updateOrCreate(
             ['email' => 'developers@ecareinfoway.com'],
             [
                 'name' => 'Admin User',
                 'password' => Hash::make('admin@123'),
                 'email_verified_at' => now(),
+                'role' => 'super_admin',
             ]
         );
+
+        // Ensure super admin has access to all websites (via relationship, super admin doesn't need explicit assignments)
 
         $this->command->info('Admin user created/updated: developers@ecareinfoway.com / admin@123');
     }

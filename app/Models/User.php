@@ -21,6 +21,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
 
     /**
@@ -65,5 +66,46 @@ class User extends Authenticatable
             })
             ->where('is_read', false)
             ->count();
+    }
+
+    /**
+     * Check if user is a super admin
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'super_admin';
+    }
+
+    /**
+     * Get websites assigned to this user
+     */
+    public function websites()
+    {
+        return $this->belongsToMany(Website::class, 'user_website')->withTimestamps();
+    }
+
+    /**
+     * Get accessible website IDs for this user
+     * Super admin gets all, regular users get only assigned
+     */
+    public function getAccessibleWebsiteIds(): array
+    {
+        if ($this->isSuperAdmin()) {
+            return Website::pluck('id')->toArray();
+        }
+
+        return $this->websites()->pluck('websites.id')->toArray();
+    }
+
+    /**
+     * Check if user can access a specific website
+     */
+    public function canAccessWebsite(int $websiteId): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        return $this->websites()->where('websites.id', $websiteId)->exists();
     }
 }

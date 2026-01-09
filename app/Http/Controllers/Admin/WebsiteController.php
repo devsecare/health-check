@@ -13,17 +13,20 @@ use App\Services\SeoAuditService;
 use App\Services\BrokenLinksService;
 use App\Services\DomainAuthorityService;
 use App\Services\NotificationService;
+use App\Traits\HasWebsiteAccess;
 use App\Jobs\CheckBrokenLinks;
 use Illuminate\Http\Request;
 
 class WebsiteController extends Controller
 {
+    use HasWebsiteAccess;
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $websites = Website::latest()->paginate(10);
+        $user = auth()->user();
+        $websites = Website::accessibleBy($user)->latest()->paginate(10);
         return view('admin.websites.index', compact('websites'));
     }
 
@@ -32,6 +35,12 @@ class WebsiteController extends Controller
      */
     public function create()
     {
+        // Only super admin can create websites
+        $user = auth()->user();
+        if (!$user->isSuperAdmin()) {
+            abort(403, 'You do not have permission to create websites.');
+        }
+
         return view('admin.websites.create');
     }
 
@@ -40,6 +49,12 @@ class WebsiteController extends Controller
      */
     public function store(Request $request)
     {
+        // Only super admin can create websites
+        $user = auth()->user();
+        if (!$user->isSuperAdmin()) {
+            abort(403, 'You do not have permission to create websites.');
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'url' => 'required|url|max:255',
@@ -55,6 +70,7 @@ class WebsiteController extends Controller
      */
     public function show(Website $website)
     {
+        $this->ensureWebsiteAccess($website->id);
         return view('admin.websites.show', compact('website'));
     }
 
@@ -63,6 +79,13 @@ class WebsiteController extends Controller
      */
     public function edit(Website $website)
     {
+        // Only super admin can edit websites
+        $user = auth()->user();
+        if (!$user->isSuperAdmin()) {
+            abort(403, 'You do not have permission to edit websites.');
+        }
+
+        $this->ensureWebsiteAccess($website->id);
         return view('admin.websites.edit', compact('website'));
     }
 
@@ -71,6 +94,14 @@ class WebsiteController extends Controller
      */
     public function update(Request $request, Website $website)
     {
+        // Only super admin can update websites
+        $user = auth()->user();
+        if (!$user->isSuperAdmin()) {
+            abort(403, 'You do not have permission to update websites.');
+        }
+
+        $this->ensureWebsiteAccess($website->id);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'url' => 'required|url|max:255',
@@ -86,6 +117,14 @@ class WebsiteController extends Controller
      */
     public function destroy(Website $website)
     {
+        // Only super admin can delete websites
+        $user = auth()->user();
+        if (!$user->isSuperAdmin()) {
+            abort(403, 'You do not have permission to delete websites.');
+        }
+
+        $this->ensureWebsiteAccess($website->id);
+
         $website->delete();
 
         return redirect()->route('admin.websites.index')->with('success', 'Website deleted successfully!');
@@ -96,6 +135,8 @@ class WebsiteController extends Controller
      */
     public function runPageSpeedTest(Website $website, Request $request)
     {
+        $this->ensureWebsiteAccess($website->id);
+
         try {
             // Increase execution time limit for PageSpeed API calls (can take 30-120 seconds)
             set_time_limit(180); // 3 minutes
@@ -157,6 +198,8 @@ class WebsiteController extends Controller
      */
     public function showPageSpeed(Website $website, Request $request)
     {
+        $this->ensureWebsiteAccess($website->id);
+
         $strategy = $request->input('strategy', 'mobile');
 
         $latestInsight = $website->latestPageSpeedInsight($strategy);
@@ -173,6 +216,8 @@ class WebsiteController extends Controller
      */
     public function runSeoAudit(Website $website, Request $request)
     {
+        $this->ensureWebsiteAccess($website->id);
+
         try {
             set_time_limit(180);
             ini_set('max_execution_time', 180);
@@ -246,6 +291,8 @@ class WebsiteController extends Controller
      */
     public function showSeoAudit(Website $website)
     {
+        $this->ensureWebsiteAccess($website->id);
+
         $latestAudit = $website->latestSeoAudit();
         $allAudits = $website->seoAudits()
             ->orderBy('created_at', 'desc')
@@ -259,6 +306,8 @@ class WebsiteController extends Controller
      */
     public function runBrokenLinksCheck(Website $website, Request $request)
     {
+        $this->ensureWebsiteAccess($website->id);
+
         try {
             $checkType = $request->input('check_type', 'whole_website');
             $url = $checkType === 'single_page'
@@ -612,6 +661,8 @@ class WebsiteController extends Controller
      */
     public function getBrokenLinksProgress(Website $website, Request $request)
     {
+        $this->ensureWebsiteAccess($website->id);
+
         $checkId = $request->input('check_id');
 
         if ($checkId) {
@@ -692,6 +743,8 @@ class WebsiteController extends Controller
      */
     public function showBrokenLinks(Website $website)
     {
+        $this->ensureWebsiteAccess($website->id);
+
         $latestCheck = $website->brokenLinksChecks()
             ->whereIn('status', ['completed', 'failed'])
             ->latest()
@@ -715,6 +768,8 @@ class WebsiteController extends Controller
      */
     public function runDomainAuthorityCheck(Website $website, Request $request)
     {
+        $this->ensureWebsiteAccess($website->id);
+
         try {
             set_time_limit(180);
             ini_set('max_execution_time', 180);
@@ -768,6 +823,8 @@ class WebsiteController extends Controller
      */
     public function showDomainAuthority(Website $website)
     {
+        $this->ensureWebsiteAccess($website->id);
+
         $latestCheck = $website->latestDomainAuthority();
         $allChecks = $website->domainAuthorities()
             ->orderBy('created_at', 'desc')

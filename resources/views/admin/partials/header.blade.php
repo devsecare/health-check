@@ -6,7 +6,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
             </svg>
         </button>
-        
+
         <!-- Search Bar (Desktop) -->
         <div class="hidden lg:flex flex-1 max-w-xl mx-8">
             <div class="relative w-full">
@@ -15,12 +15,12 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
                 </div>
-                <input type="text" 
-                       placeholder="Search..." 
+                <input type="text"
+                       placeholder="Search..."
                        class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
             </div>
         </div>
-        
+
         <!-- Right Side Actions -->
         <div class="flex items-center space-x-4">
             <!-- Notifications -->
@@ -32,7 +32,7 @@
                     <span id="notifications-badge" class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800 hidden"></span>
                     <span id="notifications-count" class="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full ring-2 ring-white dark:ring-gray-800 hidden">0</span>
                 </button>
-                
+
                 <!-- Notifications Dropdown -->
                 <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
                     <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
@@ -50,7 +50,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- User Menu -->
             <div class="relative">
                 <button id="user-menu-btn" class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
@@ -61,7 +61,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                     </svg>
                 </button>
-                
+
                 <!-- User Dropdown -->
                 <div id="user-menu-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
                     <div class="p-2">
@@ -69,8 +69,10 @@
                             <p class="text-sm font-medium text-gray-900 dark:text-white">{{ auth()->user()->name }}</p>
                             <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ auth()->user()->email }}</p>
                         </div>
-                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors mt-2">Profile</a>
-                        <a href="{{ route('admin.settings') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">Settings</a>
+                        <a href="{{ route('admin.profile') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors mt-2">Profile</a>
+                        @if(auth()->user()->isSuperAdmin())
+                            <a href="{{ route('admin.settings') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">Settings</a>
+                        @endif
                         <hr class="my-2 border-gray-200 dark:border-gray-700">
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
@@ -86,7 +88,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Logout Button (Mobile/Always Visible) -->
             <form method="POST" action="{{ route('logout') }}" class="lg:hidden">
                 @csrf

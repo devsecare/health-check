@@ -78,4 +78,26 @@ class Website extends Model
     {
         return $this->domainAuthorities()->latest()->first();
     }
+
+    /**
+     * Get users assigned to this website
+     */
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'user_website')->withTimestamps();
+    }
+
+    /**
+     * Scope to filter websites accessible by a user
+     */
+    public function scopeAccessibleBy($query, $user)
+    {
+        if ($user->isSuperAdmin()) {
+            return $query;
+        }
+
+        return $query->whereHas('users', function($q) use ($user) {
+            $q->where('users.id', $user->id);
+        });
+    }
 }
