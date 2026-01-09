@@ -59,6 +59,38 @@
         </div>
     @endif
 
+    <!-- Filter Section (Super Admin Only) -->
+    @if(auth()->user()->isSuperAdmin() && isset($allUsers))
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+        <form method="GET" action="{{ route('admin.websites.index') }}" class="flex items-center space-x-4">
+            <div class="flex-1">
+                <label for="user_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Filter by User
+                </label>
+                <select
+                    id="user_id"
+                    name="user_id"
+                    onchange="this.form.submit()"
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">All Users</option>
+                    @foreach($allUsers as $filterUser)
+                        <option value="{{ $filterUser->id }}" {{ $selectedUserId == $filterUser->id ? 'selected' : '' }}>
+                            {{ $filterUser->name }} ({{ $filterUser->email }}){{ $filterUser->isSuperAdmin() ? ' - Super Admin' : '' }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            @if($selectedUserId)
+            <div class="flex items-end">
+                <a href="{{ route('admin.websites.index') }}" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
+                    Clear Filter
+                </a>
+            </div>
+            @endif
+        </form>
+    </div>
+    @endif
+
     <!-- Websites Table -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div class="overflow-x-auto">
@@ -71,6 +103,11 @@
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             URL
                         </th>
+                        @if(auth()->user()->isSuperAdmin())
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Assigned Users
+                        </th>
+                        @endif
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Created
                         </th>
@@ -103,6 +140,30 @@
                                 </svg>
                             </a>
                         </td>
+                        @if(auth()->user()->isSuperAdmin())
+                        <td class="px-6 py-4">
+                            <div class="flex flex-wrap gap-2">
+                                @php
+                                    $websiteUsers = $website->users ?? collect();
+                                @endphp
+                                @forelse($websiteUsers as $assignedUser)
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                        {{ $assignedUser->isSuperAdmin()
+                                            ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
+                                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' }}">
+                                        {{ $assignedUser->name }}
+                                        @if($assignedUser->isSuperAdmin())
+                                            <svg class="ml-1 w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                            </svg>
+                                        @endif
+                                    </span>
+                                @empty
+                                    <span class="text-xs text-gray-500 dark:text-gray-400 italic">No users assigned</span>
+                                @endforelse
+                            </div>
+                        </td>
+                        @endif
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             {{ $website->created_at->format('M d, Y') }}
                         </td>
@@ -147,7 +208,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="4" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                        <td colspan="{{ auth()->user()->isSuperAdmin() ? '5' : '4' }}" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
                             <div class="py-12">
                                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>

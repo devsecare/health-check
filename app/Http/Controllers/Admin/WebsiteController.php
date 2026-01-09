@@ -23,10 +23,34 @@ class WebsiteController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
-        $websites = Website::accessibleBy($user)->latest()->paginate(10);
+
+        // Start with accessible websites
+        $query = Website::accessibleBy($user);
+
+        // For super admin, add filtering by user
+        $selectedUserId = null;
+        $allUsers = collect();
+
+        if ($user->isSuperAdmin()) {
+            // Get all users for filter dropdown
+            $allUsers = \App\Models\User::orderBy('name')->get();
+
+            // Apply user filter if provided
+            if ($request->has('user_id') && $request->user_id) {
+                $selectedUserId = $request->user_id;
+                $query->whereHas('users', function($q) use ($selectedUserId) {
+                    $q->where('users.id', $selectedUserId);
+                });
+            }
+
+            // Eager load users relationship for tags
+            $query->with('users');
+        }
+
+        $websites = $query->latest()->paginate(10)->withQueryString();
 
         // Get remaining website slots for regular users
         $remainingSlots = null;
@@ -34,7 +58,7 @@ class WebsiteController extends Controller
             $remainingSlots = $user->getRemainingWebsiteSlots();
         }
 
-        return view('admin.websites.index', compact('websites', 'remainingSlots'));
+        return view('admin.websites.index', compact('websites', 'remainingSlots', 'allUsers', 'selectedUserId'));
     }
 
     /**
