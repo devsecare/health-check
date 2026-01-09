@@ -59,6 +59,156 @@ Route::get('/test-email', function () {
     }
 })->name('test.email');
 
+// Email Template Preview Routes
+Route::get('/preview-email/pagespeed', function () {
+    $website = \App\Models\Website::first();
+    if (!$website) {
+        $website = new \App\Models\Website();
+        $website->name = 'Example Website';
+        $website->url = 'https://example.com';
+        $website->id = 1;
+    }
+
+    $insight = new \App\Models\PageSpeedInsight();
+    $insight->website_id = $website->id ?? 1;
+    $insight->strategy = 'mobile';
+    $insight->performance_score = 85;
+    $insight->accessibility_score = 92;
+    $insight->seo_score = 95;
+    $insight->best_practices_score = 88;
+    $insight->lcp = 2.5;
+    $insight->fcp = 1.8;
+    $insight->cls = 0.1;
+    $insight->tbt = 200;
+    $insight->si = 3.2;
+    $insight->ttfb = 400;
+    $insight->interactive = 3.5;
+    $insight->created_at = now();
+    $insight->updated_at = now();
+
+    return view('emails.pagespeed-report', compact('insight', 'website'));
+})->name('preview.email.pagespeed');
+
+Route::get('/preview-email/seo-audit', function () {
+    $website = \App\Models\Website::first();
+    if (!$website) {
+        $website = new \App\Models\Website();
+        $website->name = 'Example Website';
+        $website->url = 'https://example.com';
+        $website->id = 1;
+    }
+
+    $audit = new \App\Models\SeoAudit();
+    $audit->website_id = $website->id ?? 1;
+    $audit->url = 'https://example.com';
+    $audit->overall_score = 78;
+    $audit->meta_tags = [
+        'title' => ['exists' => true, 'length' => 55],
+        'description' => ['exists' => true, 'length' => 155],
+    ];
+    $audit->headings = [
+        'h1_count' => 1,
+        'h2_count' => 5,
+        'h3_count' => 12,
+    ];
+    $audit->images = [
+        'total' => 25,
+        'with_alt' => 20,
+        'without_alt' => 5,
+    ];
+    $audit->created_at = now();
+    $audit->updated_at = now();
+
+    return view('emails.seo-audit-report', compact('audit', 'website'));
+})->name('preview.email.seo-audit');
+
+Route::get('/preview-email/domain-authority', function () {
+    $website = \App\Models\Website::first();
+    if (!$website) {
+        $website = new \App\Models\Website();
+        $website->name = 'Example Website';
+        $website->url = 'https://example.com';
+        $website->id = 1;
+    }
+
+    $domainAuthority = new \App\Models\DomainAuthority();
+    $domainAuthority->website_id = $website->id ?? 1;
+    $domainAuthority->domain_authority = 65;
+    $domainAuthority->page_authority = 58;
+    $domainAuthority->spam_score = 2;
+    $domainAuthority->backlinks = 1250;
+    $domainAuthority->referring_domains = 320;
+    $domainAuthority->created_at = now();
+    $domainAuthority->updated_at = now();
+
+    return view('emails.domain-authority-report', compact('domainAuthority', 'website'));
+})->name('preview.email.domain-authority');
+
+Route::get('/preview-email/broken-links', function () {
+    $website = \App\Models\Website::first();
+    if (!$website) {
+        $website = new \App\Models\Website();
+        $website->name = 'Example Website';
+        $website->url = 'https://example.com';
+        $website->id = 1;
+    }
+
+    $check = new \App\Models\BrokenLink();
+    $check->website_id = $website->id ?? 1;
+    $check->url = 'https://example.com';
+    $check->total_checked = 150;
+    $check->total_broken = 12;
+    $check->summary = [
+        'internal' => 8,
+        'external' => 4,
+        'by_type' => [
+            'link' => 10,
+            'image' => 2,
+        ],
+        'by_status_code' => [
+            404 => 8,
+            500 => 2,
+            403 => 2,
+        ],
+    ];
+    $check->broken_links_data = [
+        [
+            'broken_url' => 'https://example.com/page-1',
+            'type' => 'link',
+            'status_code' => 404,
+            'found_on' => 'https://example.com/home',
+        ],
+        [
+            'broken_url' => 'https://example.com/image.jpg',
+            'type' => 'image',
+            'status_code' => 404,
+            'found_on' => 'https://example.com/about',
+        ],
+        [
+            'broken_url' => 'https://external-site.com/page',
+            'type' => 'link',
+            'status_code' => 500,
+            'found_on' => 'https://example.com/blog',
+        ],
+    ];
+    $check->created_at = now();
+    $check->updated_at = now();
+
+    return view('emails.broken-links-report', [
+        'check' => $check,
+        'website' => $website,
+        'summary' => $check->summary ?? [],
+        'brokenLinks' => array_slice($check->broken_links_data ?? [], 0, 50),
+        'totalChecked' => $check->total_checked ?? 0,
+        'totalBroken' => $check->total_broken ?? 0,
+    ]);
+})->name('preview.email.broken-links');
+
+// Email Preview Index Page
+Route::get('/preview-email', function () {
+    return view('email-preview-index');
+})->name('preview.email.index');
+
 // Authentication Routes
 Route::get('/login', [App\Http\Controllers\Auth\LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [App\Http\Controllers\Auth\LoginController::class, 'login']);
