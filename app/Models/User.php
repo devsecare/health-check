@@ -22,6 +22,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'website_limit',
     ];
 
     /**
@@ -107,5 +108,41 @@ class User extends Authenticatable
         }
 
         return $this->websites()->where('websites.id', $websiteId)->exists();
+    }
+
+    /**
+     * Check if user can create more websites
+     */
+    public function canCreateWebsite(): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true; // Super admin has unlimited websites
+        }
+
+        // If limit is null, user has unlimited websites
+        if ($this->website_limit === null) {
+            return true;
+        }
+
+        // Check if user has reached their limit
+        $currentWebsiteCount = $this->websites()->count();
+        return $currentWebsiteCount < $this->website_limit;
+    }
+
+    /**
+     * Get remaining website slots for user
+     */
+    public function getRemainingWebsiteSlots(): ?int
+    {
+        if ($this->isSuperAdmin()) {
+            return null; // Unlimited
+        }
+
+        if ($this->website_limit === null) {
+            return null; // Unlimited
+        }
+
+        $currentWebsiteCount = $this->websites()->count();
+        return max(0, $this->website_limit - $currentWebsiteCount);
     }
 }

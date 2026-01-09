@@ -157,6 +157,37 @@
                             {{ $user->email_verified_at ? 'Verified' : 'Not Verified' }}
                         </span>
                     </div>
+
+                    @if($user->role === 'user')
+                    <div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Website Limit</p>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">
+                            {{ $user->website_limit === null ? 'Unlimited' : $user->website_limit }}
+                        </p>
+                    </div>
+
+                    <div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Websites Created</p>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">
+                            {{ $user->websites->count() }}
+                            @if($user->website_limit !== null)
+                                / {{ $user->website_limit }}
+                            @endif
+                        </p>
+                    </div>
+
+                    @php
+                        $remaining = $user->getRemainingWebsiteSlots();
+                    @endphp
+                    @if($remaining !== null)
+                    <div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Remaining Slots</p>
+                        <p class="text-sm font-medium {{ $remaining > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+                            {{ $remaining }}
+                        </p>
+                    </div>
+                    @endif
+                    @endif
                 </div>
             </div>
 

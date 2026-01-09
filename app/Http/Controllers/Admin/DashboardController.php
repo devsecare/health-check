@@ -266,6 +266,7 @@ class DashboardController extends Controller
             'email' => 'required|email|max:255|unique:users,email',
             'password' => 'required|min:6|confirmed',
             'role' => 'required|in:super_admin,user',
+            'website_limit' => 'nullable|integer|min:0',
             'websites' => 'nullable|array',
             'websites.*' => 'exists:websites,id',
         ]);
@@ -275,6 +276,7 @@ class DashboardController extends Controller
             'email' => $validated['email'],
             'password' => bcrypt($validated['password']),
             'role' => $validated['role'],
+            'website_limit' => $validated['website_limit'] ?? null,
         ]);
 
         // Sync website assignments (only for regular users)
@@ -702,6 +704,7 @@ class DashboardController extends Controller
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
             'password' => 'nullable|min:6|confirmed',
             'role' => 'required|in:super_admin,user',
+            'website_limit' => 'nullable|integer|min:0',
             'websites' => 'nullable|array',
             'websites.*' => 'exists:websites,id',
         ]);
@@ -709,6 +712,7 @@ class DashboardController extends Controller
         $user->name = $validated['name'];
         $user->email = $validated['email'];
         $user->role = $validated['role'];
+        $user->website_limit = $validated['website_limit'] ?? null;
 
         if (!empty($validated['password'])) {
             $user->password = bcrypt($validated['password']);

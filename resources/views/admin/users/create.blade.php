@@ -109,10 +109,31 @@
                 </p>
             </div>
 
+            <!-- Website Limit (only for regular users) -->
+            <div id="website-limit-section" style="display: {{ old('role', 'user') === 'user' ? 'block' : 'none' }};">
+                <label for="website_limit" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Website Limit
+                </label>
+                <input
+                    type="number"
+                    id="website_limit"
+                    name="website_limit"
+                    value="{{ old('website_limit') }}"
+                    min="0"
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Leave empty for unlimited">
+                @error('website_limit')
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Maximum number of websites this user can create. Leave empty for unlimited.
+                </p>
+            </div>
+
             <!-- Website Assignment (only for regular users) -->
             <div id="website-assignment" style="display: {{ old('role', 'user') === 'user' ? 'block' : 'none' }};">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Assign Websites
+                    Assign Existing Websites
                 </label>
                 <div class="space-y-2 max-h-64 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-700">
                     @forelse($websites ?? [] as $website)
@@ -136,7 +157,7 @@
                     <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                 @enderror
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Select which websites this user can access. Only applicable for regular users.
+                    Select which existing websites this user can access. Note: Users can also create their own websites (subject to their limit).
                 </p>
             </div>
 
@@ -154,17 +175,23 @@
 </div>
 
 <script>
-    // Show/hide website assignment based on role
+    // Show/hide website assignment and limit based on role
     document.getElementById('role').addEventListener('change', function() {
         const websiteAssignment = document.getElementById('website-assignment');
+        const websiteLimitSection = document.getElementById('website-limit-section');
+
         if (this.value === 'user') {
             websiteAssignment.style.display = 'block';
+            websiteLimitSection.style.display = 'block';
         } else {
             websiteAssignment.style.display = 'none';
+            websiteLimitSection.style.display = 'none';
             // Uncheck all websites when switching to super admin
             document.querySelectorAll('input[name="websites[]"]').forEach(checkbox => {
                 checkbox.checked = false;
             });
+            // Clear website limit
+            document.getElementById('website_limit').value = '';
         }
     });
 </script>

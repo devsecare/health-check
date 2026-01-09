@@ -27,7 +27,14 @@ class WebsiteController extends Controller
     {
         $user = auth()->user();
         $websites = Website::accessibleBy($user)->latest()->paginate(10);
-        return view('admin.websites.index', compact('websites'));
+
+        // Get remaining website slots for regular users
+        $remainingSlots = null;
+        if (!$user->isSuperAdmin()) {
+            $remainingSlots = $user->getRemainingWebsiteSlots();
+        }
+
+        return view('admin.websites.index', compact('websites', 'remainingSlots'));
     }
 
     /**
@@ -35,13 +42,21 @@ class WebsiteController extends Controller
      */
     public function create()
     {
-        // Only super admin can create websites
         $user = auth()->user();
-        if (!$user->isSuperAdmin()) {
-            abort(403, 'You do not have permission to create websites.');
+
+        // Check if user can create websites
+        if (!$user->canCreateWebsite()) {
+            $remaining = $user->getRemainingWebsiteSlots();
+            $message = $remaining === null
+                ? 'You cannot create more websites at this time.'
+                : "You have reached your website limit ({$user->website_limit} websites).";
+            return redirect()->route('admin.websites.index')
+                ->with('error', $message);
         }
 
-        return view('admin.websites.create');
+        $remainingSlots = $user->getRemainingWebsiteSlots();
+
+        return view('admin.websites.create', compact('remainingSlots'));
     }
 
     /**
@@ -49,10 +64,16 @@ class WebsiteController extends Controller
      */
     public function store(Request $request)
     {
-        // Only super admin can create websites
         $user = auth()->user();
-        if (!$user->isSuperAdmin()) {
-            abort(403, 'You do not have permission to create websites.');
+
+        // Check if user can create websites
+        if (!$user->canCreateWebsite()) {
+            $remaining = $user->getRemainingWebsiteSlots();
+            $message = $remaining === null
+                ? 'You cannot create more websites at this time.'
+                : "You have reached your website limit ({$user->website_limit} websites).";
+            return redirect()->route('admin.websites.index')
+                ->with('error', $message);
         }
 
         $validated = $request->validate([
@@ -60,7 +81,12 @@ class WebsiteController extends Controller
             'url' => 'required|url|max:255',
         ]);
 
-        Website::create($validated);
+        $website = Website::create($validated);
+
+        // Auto-assign website to the creator if they're a regular user
+        if (!$user->isSuperAdmin()) {
+            $user->websites()->attach($website->id);
+        }
 
         return redirect()->route('admin.websites.index')->with('success', 'Website added successfully!');
     }
@@ -79,13 +105,13 @@ class WebsiteController extends Controller
      */
     public function edit(Website $website)
     {
-        // Only super admin can edit websites
         $user = auth()->user();
-        if (!$user->isSuperAdmin()) {
-            abort(403, 'You do not have permission to edit websites.');
-        }
-
         $this->ensureWebsiteAccess($website->id);
+
+        // Only super admin or the website creator can edit websites
+        // For regular users, they can only edit websites they created (have access to)
+        // Super admin can edit any website
+
         return view('admin.websites.edit', compact('website'));
     }
 
@@ -94,13 +120,11 @@ class WebsiteController extends Controller
      */
     public function update(Request $request, Website $website)
     {
-        // Only super admin can update websites
         $user = auth()->user();
-        if (!$user->isSuperAdmin()) {
-            abort(403, 'You do not have permission to update websites.');
-        }
-
         $this->ensureWebsiteAccess($website->id);
+
+        // Regular users can update websites they have access to
+        // Super admin can update any website
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -117,13 +141,11 @@ class WebsiteController extends Controller
      */
     public function destroy(Website $website)
     {
-        // Only super admin can delete websites
         $user = auth()->user();
-        if (!$user->isSuperAdmin()) {
-            abort(403, 'You do not have permission to delete websites.');
-        }
-
         $this->ensureWebsiteAccess($website->id);
+
+        // Regular users can delete websites they have access to
+        // Super admin can delete any website
 
         $website->delete();
 
